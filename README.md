@@ -20,7 +20,8 @@ To minimise the error, we will use [Huber Loss](https://en.wikipedia.org/wiki/Hu
 Input of the model is difference between the current state and previous state patches, and it has two output which is going to left or right in order to stay in the game longer
 
 ### Output
-
+Based on the chart below, we can see on average the model can hold the pole on cart for 50 ms, but after 800 episodes, the average increased to 90 ms, if we have a better neural network architecture we can achieve better for sure, and adjusting a few hyper paramter could enhance the accuracy
+![img](https://github.com/fadilparves/dqn-pytorch-cartpole/blob/main/train.png)
 
 ### How to Use:
 1. Install pytorch version 1.4.0 above
