@@ -14,6 +14,8 @@ import torch.optim as optim
 import torch.nn.functional as F
 import torchvision.transforms as T
 
+print(torch.__version__)
+
 env = gym.make('CartPole-v0').unwrapped
 
 is_ipython = 'inline' in matplotlib.get_backend()
@@ -135,7 +137,7 @@ def select_action(state):
         with torch.no_grad():
             return policy_net(state).max(1)[1].view(1, 1)
     else:
-        return torch.tensor([[randpm.randrange(n_actions)]], device=device, dtype=torch.long)
+        return torch.tensor([[random.randrange(n_actions)]], device=device, dtype=torch.long)
 
 episode_durations = []
 
@@ -162,10 +164,11 @@ def optimize_model():
     if len(memory) < BATCH_SIZE:
         return
     transitions = memory.sample(BATCH_SIZE)
-    batch = Transition(*zip(&transitions))
+    batch = Transition(*zip(*transitions))
     # Compute a mask of non-final states and concatenate the batch elements
     # (a final state would've been the one after which simulation ended)
-    non_final_mask = torch.tensor(tuple(map(lambda s: s is not None, batch.next_state)), device=device, dtype=torch.bool)
+    non_final_mask = torch.tensor(tuple(map(lambda s: s is not None,
+                                          batch.next_state)), device=device, dtype=torch.bool)
     non_final_next_states = torch.cat([s for s in batch.next_state if s is not None])
 
     state_batch = torch.cat(batch.state)
@@ -186,3 +189,38 @@ def optimize_model():
     for param in policy_net.parameters():
         param.grad.data.clamp_(-1, 1)
     optimizer.step()
+
+num_episodes = 50
+for i_episode in range(num_episodes):
+    env.reset()
+    last_screen = get_screen()
+    current_screen = get_screen()
+    state = current_screen - last_screen
+    for t in count():
+        action = select_action(state)
+        _, reward, done, _ = env.step(action.item())
+        reward = torch.tensor([reward], device=device)
+
+        last_screen = current_screen
+        current_screen = get_screen()
+        if not done:
+            next_state = current_screen - last_screen
+        else:
+            next_state = None
+
+        memory.push(state, action, next_state, reward)
+
+        state = next_state
+
+        optimize_model()
+        if done:
+            episode_durations.append(t + 1)
+            plot_durations()
+            break
+    if i_episode % TARGET_UPDATE == 0:
+        target_net.load_state_dict(policy_net.state_dict())
+
+env.render()
+env.close()
+plt.ioff()
+plt.show()
