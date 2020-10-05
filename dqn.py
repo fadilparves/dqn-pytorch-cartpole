@@ -190,7 +190,7 @@ def optimize_model():
         param.grad.data.clamp_(-1, 1)
     optimizer.step()
 
-num_episodes = 1000
+num_episodes = 10000
 for i_episode in range(num_episodes):
     env.reset()
     last_screen = get_screen()
